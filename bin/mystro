@@ -1,0 +1,70 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+require 'docopt'
+require 'mystro-client'
+require 'mystro-common'
+require 'awesome_print'
+
+name = File.basename(__FILE__)
+
+DOC = <<-DOC
+Usage:
+  #{name} -h | --help
+  #{name} --version
+  #{name} COMMAND ARGUMENTS ...
+
+Arguments:
+  COMMAND             the command to run
+  ARGUMENTS           arguments to command
+
+Commands:
+  ssh
+  compute
+
+Examples:
+  #{name} ssh <name>
+  #{name} ssh <pattern>
+
+  #{name} compute list
+  #{name} compute create ...
+  #{name} compute destroy <name>
+
+Options:
+  -h --help           show this help message and exit
+     --version        show version and exit
+  -d --debug          change log level to debug
+DOC
+
+module Mystro
+  class Command
+    def run(argv)
+      STDOUT.sync = true
+      options     = Docopt::docopt(DOC, :version => Mystro::Client::Version::STRING)
+      debug       = options["--debug"]
+
+      case options["COMMAND"]
+        when "ssh"
+          ssh(options["ARGUMENTS"])
+        when "compute"
+          compute(options["ARGUMENTS"])
+      end
+    #rescue Interrupt
+    #  Volley::Log.info "interrupted"
+    #rescue SystemExit
+    #  Volley::Log.debug "exited"
+    rescue Docopt::Exit => e
+      puts e.message
+    #rescue => e
+    #  Volley::Log.error "error: #{e} #{e.message} at #{e.backtrace.first}"
+    #  Volley::Log.debug e
+    #  exit 1
+    end
+
+    def ssh(args)
+      name = args.first
+    end
+  end
+end
+
+Mystro::Command.new.run(ARGV)

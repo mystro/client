@@ -1,2 +1,2 @@
-require "mystro/client/version"
+require "mystro/client"
 

@@ -18,5 +18,5 @@ Gem::Specification.new do |gem|
   gem.require_paths = ["lib"]
 
   gem.add_dependency "httparty" # talk to server's json api
-  gem.add_dependency "docopt"
+  gem.add_dependency "clamp"
 end

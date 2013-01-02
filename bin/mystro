@@ -1,70 +1,56 @@
 #!/usr/bin/env ruby
 
 require 'rubygems'
-require 'docopt'
-require 'mystro-client'
+require 'clamp'
 require 'mystro-common'
 require 'awesome_print'
 
-name = File.basename(__FILE__)
-
-DOC = <<-DOC
-Usage:
-  #{name} -h | --help
-  #{name} --version
-  #{name} COMMAND ARGUMENTS ...
-
-Arguments:
-  COMMAND             the command to run
-  ARGUMENTS           arguments to command
-
-Commands:
-  ssh
-  compute
-
-Examples:
-  #{name} ssh <name>
-  #{name} ssh <pattern>
-
-  #{name} compute list
-  #{name} compute create ...
-  #{name} compute destroy <name>
-
-Options:
-  -h --help           show this help message and exit
-     --version        show version and exit
-  -d --debug          change log level to debug
-DOC
+require 'mystro/client'
 
 module Mystro
-  class Command
-    def run(argv)
-      STDOUT.sync = true
-      options     = Docopt::docopt(DOC, :version => Mystro::Client::Version::STRING)
-      debug       = options["--debug"]
+  class Command < Clamp::Command
+    subcommand "ssh", "ssh to server" do
+      option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
+      parameter "PATTERN ...", "name or pattern of server"
 
-      case options["COMMAND"]
-        when "ssh"
-          ssh(options["ARGUMENTS"])
-        when "compute"
-          compute(options["ARGUMENTS"])
+      def execute
+        #puts "ssh: #{pattern_list}"
+        client = Mystro::Client.new(Mystro.config.server, Mystro.config.token)
+        list = client.compute_search(pattern_list.join(","))
+
+        #ap list
+
+        if list.count == 0
+          puts "no servers matched"
+          exit 1
+        end
+
+        if list.count > 1
+          puts "more than one server was found:"
+          list.each {|e| puts "  #{e["name"]}"}
+          exit 1
+        end
+
+        o = list.first
+
+        host = o["dns"] || o["long"]
+        unless host
+          puts "hostname not set"
+          exit 1
+        end
+
+        puts "connecting as #{user} to #{o["long"] if o["long"]} (#{o["dns"]})"
+        exec("ssh #{user}@#{host}")
       end
-    #rescue Interrupt
-    #  Volley::Log.info "interrupted"
-    #rescue SystemExit
-    #  Volley::Log.debug "exited"
-    rescue Docopt::Exit => e
-      puts e.message
-    #rescue => e
-    #  Volley::Log.error "error: #{e} #{e.message} at #{e.backtrace.first}"
-    #  Volley::Log.debug e
-    #  exit 1
     end
+    subcommand "csshx", "use csshx to connect to all servers of environment" do
+      parameter "ENVIRONMENT", "environment name"
 
-    def ssh(args)
-      name = args.first
+      def execute
+        puts "csshx: #{environment}"
+      end
     end
   end
 end
 
-Mystro::Command.new.run(ARGV)
+Mystro::Command.run

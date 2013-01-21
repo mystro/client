@@ -14,7 +14,7 @@ module Mystro
       rescue => e
         Mystro::Log.error "class #{klass} not found or error instantiating"
         Mystro::Log.debug e
-        raise Clamp::Error, "class #{klass} not found or error instantiating, #{e.message}"
+        raise "class #{klass} not found or error instantiating, #{e.message}"
       end
     end
 
@@ -83,3 +83,4 @@ end
 require "mystro/client/compute"
 require "mystro/client/environment"
 require "mystro/client/template"
+require "mystro/client/account"

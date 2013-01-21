@@ -55,6 +55,7 @@ module Mystro
     end
 
     subcommand "compute", "manage computes" do
+      self.default_subcommand = "list"
       subcommand "list", "list computes" do
         def execute
           client = get_client(:compute, account)
@@ -72,7 +73,20 @@ module Mystro
       end
     end
 
+    subcommand "account", "manage accounts" do
+      self.default_subcommand = "list"
+      subcommand "list", "list accounts" do
+        def execute
+          ap Mystro.config.to_hash
+          client = get_client(:account, account)
+          list = client.list
+          Mystro::Log.warn Mystro::CLI.list(%w{Name Enabled File}, list)
+        end
+      end
+    end
+
     subcommand "template", "manage templates" do
+      self.default_subcommand = "list"
       subcommand "list", "list templates" do
         def execute
           ap Mystro.config.to_hash
@@ -84,6 +98,7 @@ module Mystro
     end
 
     subcommand "environment", "manage environments" do
+      self.default_subcommand = "list"
       subcommand "list", "list environments" do
         def execute
           client = get_client(:environment, account)

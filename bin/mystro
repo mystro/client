@@ -2,63 +2,47 @@
 
 require 'rubygems'
 require 'clamp'
-require 'mystro-common'
 require 'awesome_print'
 require 'active_support/all'
 
 require 'mystro/client'
 
-
-DOC = <<EOF
-
-EOF
-
+name = File.basename(__FILE__)
 
 def get_client(klass, account=nil)
   s = Mystro.config.server
   a = account || Mystro.config.default_account
   t = Mystro.config.token
-  #puts "server: '#{s}' account: '#{a}' token: '#{t}'"
+  #Mystro::Log.debug "server: '#{s}' account: '#{a}' token: '#{t}'"
   Mystro::Client.new(klass, s, a, t)
 end
 
 module Mystro
   class Command < Clamp::Command
-    option %w{-a --account}, "ACCOUNT", "the account to filter with", default: nil
+    option %w{-a --account}, "ACCOUNT", "the account to filter with", default: nil, environment_variable: "MYSTRO_ACCOUNT"
     option %w{-d --debug}, :flag, "turn on debugging", default: false do |v|
-      Mystro.config.debug = v
+      Mystro::Log.console_debug
+    end
+    option %w{-q --quiet}, :flag, "turn off uncessary messages", default: false do |v|
+      Mystro::Log.console_quiet
     end
     subcommand "ssh", "ssh to server" do
       option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
       parameter "PATTERN ...", "name or pattern of server"
 
       def execute
-        #puts "ssh: #{pattern_list}"
         client = get_client(:compute, account)
-        list = client.compute_search(pattern_list.join(","))
+        list = client.search(pattern_list.join(","))
 
-        #ap list
-
-        if list.count == 0
-          puts "no servers matched"
-          exit 1
-        end
-
-        if list.count > 1
-          puts "more than one server was found:"
-          puts Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
-          exit 1
-        end
+        raise "no servers matched" if list.count == 0
+        raise "more than one server found: #{list.map{|e| e["name"]}.join(", ")}" if list.count > 1
 
         o = list.first
-
         host = o["dns"] || o["long"]
-        unless host
-          puts "hostname not set"
-          exit 1
-        end
 
-        puts "connecting as #{user} to #{o["long"] if o["long"]} (#{o["dns"]})"
+        raise "host name not set" unless host
+
+        Mystro::Log.info "connecting as #{user} to #{o["long"] if o["long"]} (#{o["dns"]})"
         exec("ssh #{user}@#{host}")
       end
     end
@@ -66,7 +50,7 @@ module Mystro
       parameter "ENVIRONMENT", "environment name"
 
       def execute
-        puts "csshx: #{environment}"
+        Mystro::Log.info "csshx: #{environment}"
       end
     end
 
@@ -75,7 +59,7 @@ module Mystro
         def execute
           client = get_client(:compute, account)
           list = client.list
-          puts Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
+          Mystro::Log.warn Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
         end
       end
       subcommand "search", "list computes" do
@@ -83,7 +67,7 @@ module Mystro
         def execute
           client = get_client(:compute, account)
           list = client.search(pattern_list.join(","))
-          puts Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
+          Mystro::Log.warn Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
         end
       end
     end
@@ -94,7 +78,7 @@ module Mystro
           ap Mystro.config.to_hash
           client = get_client(:template, account)
           list = client.list
-          puts Mystro::CLI.list(%w{Name Enabled File}, list)
+          Mystro::Log.warn Mystro::CLI.list(%w{Name Enabled File}, list)
         end
       end
     end
@@ -104,7 +88,7 @@ module Mystro
         def execute
           client = get_client(:environment, account)
           list = client.list
-          puts Mystro::CLI.list(%w{Deleting Name Template Computes Balancers}, list)
+          Mystro::Log.warn Mystro::CLI.list(%w{Deleting Name Template Computes Balancers}, list)
         end
       end
 
@@ -112,9 +96,8 @@ module Mystro
         parameter "name", "id or name of environment"
         def execute
           client = get_client(:environment, account)
-          o = client.show(name)
-          ap o
-          puts Mystro::CLI.show(o)
+          response = client.show(name)
+          Mystro::Log.warn Mystro::CLI.show(response) if response && response.count > 0
         end
       end
 
@@ -124,9 +107,10 @@ module Mystro
           client = get_client(:environment, account)
           env = client.show(name)
           raise "environment not found" unless env["id"]
-          o = client.destroy(env["id"])
-          ap o
-          puts Mystro::CLI.show(o)
+          response = client.destroy(env["id"])
+          if response && response.count > 0
+            Mystro::Log.warn Mystro::CLI.show(response)
+          end
         end
       end
 
@@ -138,11 +122,19 @@ module Mystro
         def execute
           client = get_client(:environment, account)
           response = client.create(name, template, protected?)
-          ap response
+          if response && response.count > 0
+            Mystro::Log.warn Mystro::CLI.show(response)
+          end
         end
       end
     end
   end
 end
 
-Mystro::Command.run
+begin
+  Mystro::Command.run
+rescue => e
+  Mystro::Log.error "error: #{e.message}"
+  Mystro::Log.debug e
+  exit 1
+end

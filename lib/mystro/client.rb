@@ -1,6 +1,7 @@
 require 'active_support/all'
 require "httparty"
 
+require 'mystro-common'
 require "mystro/client/version"
 require "mystro/client/cli"
 
@@ -10,7 +11,10 @@ module Mystro
       def new(klass, server, account, token=nil)
         k = "Mystro::Client::#{klass.to_s.capitalize}".constantize
         k.new(server,account,token)
-        #Mystro::Client::Base.new(server, account, token)
+      rescue => e
+        Mystro::Log.error "class #{klass} not found or error instantiating"
+        Mystro::Log.debug e
+        raise Clamp::Error, "class #{klass} not found or error instantiating, #{e.message}"
       end
     end
 
@@ -22,10 +26,6 @@ module Mystro
         @token   = token
         @account = account
       end
-
-      #def template_list
-      #  api_get("templates")
-      #end
 
       private
 
@@ -54,15 +54,19 @@ module Mystro
         method = m.to_sym
         url = url("api/accounts/#@account/#{u}")
 
-        puts "<= #{url}"
-        puts "=> #{data}" if data && data.count > 0
+        Mystro::Log.debug "<= #{url}"
+        Mystro::Log.debug "=> #{data}" if data && data.count > 0
 
         r   = self.class.send(method, url, body: data.to_json, headers: { 'Content-Type' => 'application/json' }.merge(headers))
-        puts "== #{r.response.class} #{r.response.code} #{r}"
+        Mystro::Log.debug "== #{r.response.class} #{r.response.code} #{r}"
 
         api_response_error?(r.response)
 
-        JSON.parse(r.body)
+        if r.body
+          JSON.parse(r.body)
+        else
+          {}
+        end
         #rescue => e
         #  { error: e.message, backtrace: e.backtrace }
       end

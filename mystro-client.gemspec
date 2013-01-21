@@ -19,4 +19,5 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency "httparty" # talk to server's json api
   gem.add_dependency "clamp"
+  gem.add_dependency "terminal-table"
 end

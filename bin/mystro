@@ -4,18 +4,37 @@ require 'rubygems'
 require 'clamp'
 require 'mystro-common'
 require 'awesome_print'
+require 'active_support/all'
 
 require 'mystro/client'
 
+
+DOC = <<EOF
+
+EOF
+
+
+def get_client(klass, account=nil)
+  s = Mystro.config.server
+  a = account || Mystro.config.default_account
+  t = Mystro.config.token
+  #puts "server: '#{s}' account: '#{a}' token: '#{t}'"
+  Mystro::Client.new(klass, s, a, t)
+end
+
 module Mystro
   class Command < Clamp::Command
+    option %w{-a --account}, "ACCOUNT", "the account to filter with", default: nil
+    option %w{-d --debug}, :flag, "turn on debugging", default: false do |v|
+      Mystro.config.debug = v
+    end
     subcommand "ssh", "ssh to server" do
       option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
       parameter "PATTERN ...", "name or pattern of server"
 
       def execute
         #puts "ssh: #{pattern_list}"
-        client = Mystro::Client.new(Mystro.config.server, Mystro.config.token)
+        client = get_client(:compute, account)
         list = client.compute_search(pattern_list.join(","))
 
         #ap list
@@ -27,7 +46,7 @@ module Mystro
 
         if list.count > 1
           puts "more than one server was found:"
-          list.each {|e| puts "  #{e["name"]}"}
+          puts Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
           exit 1
         end
 
@@ -48,6 +67,79 @@ module Mystro
 
       def execute
         puts "csshx: #{environment}"
+      end
+    end
+
+    subcommand "compute", "manage computes" do
+      subcommand "list", "list computes" do
+        def execute
+          client = get_client(:compute, account)
+          list = client.list
+          puts Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
+        end
+      end
+      subcommand "search", "list computes" do
+        parameter "[PATTERN] ...", "show only matching this pattern"
+        def execute
+          client = get_client(:compute, account)
+          list = client.search(pattern_list.join(","))
+          puts Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
+        end
+      end
+    end
+
+    subcommand "template", "manage templates" do
+      subcommand "list", "list templates" do
+        def execute
+          ap Mystro.config.to_hash
+          client = get_client(:template, account)
+          list = client.list
+          puts Mystro::CLI.list(%w{Name Enabled File}, list)
+        end
+      end
+    end
+
+    subcommand "environment", "manage environments" do
+      subcommand "list", "list environments" do
+        def execute
+          client = get_client(:environment, account)
+          list = client.list
+          puts Mystro::CLI.list(%w{Deleting Name Template Computes Balancers}, list)
+        end
+      end
+
+      subcommand "show", "show environment" do
+        parameter "name", "id or name of environment"
+        def execute
+          client = get_client(:environment, account)
+          o = client.show(name)
+          ap o
+          puts Mystro::CLI.show(o)
+        end
+      end
+
+      subcommand "destroy", "destroy environment" do
+        parameter "name", "id or name of environment"
+        def execute
+          client = get_client(:environment, account)
+          env = client.show(name)
+          raise "environment not found" unless env["id"]
+          o = client.destroy(env["id"])
+          ap o
+          puts Mystro::CLI.show(o)
+        end
+      end
+
+      subcommand "create", "create environment" do
+        parameter "NAME", "the name of the environment"
+        parameter "TEMPLATE", "the template to use"
+        option %w{-p --protected}, :flag, "set protected flag on environment", default: false
+
+        def execute
+          client = get_client(:environment, account)
+          response = client.create(name, template, protected?)
+          ap response
+        end
       end
     end
   end

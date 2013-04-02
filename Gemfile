@@ -3,7 +3,11 @@ source 'https://rubygems.org'
 # Specify your gem's dependencies in mystro-client.gemspec
 gemspec
 
-gem "mystro-common", :path => "../common"
+if ENV["MYSTRO_DEV"]
+  gem "mystro-common", :path => "../common"
+else
+  gem "mystro-common"
+end
 gem "awesome_print"
 
 gem "mongo"

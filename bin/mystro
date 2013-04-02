@@ -28,6 +28,7 @@ module Mystro
     end
     subcommand "ssh", "ssh to server" do
       option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
+      option %w{-o --options}, "[OPTIONS]", "additional ssh options"
       parameter "PATTERN ...", "name or pattern of server"
 
       def execute
@@ -38,19 +39,25 @@ module Mystro
         raise "more than one server found: #{list.map{|e| e["name"]}.join(", ")}" if list.count > 1
 
         o = list.first
-        host = o["dns"] || o["long"]
+        host =  o["long"] || o["dns"]
 
         raise "host name not set" unless host
 
-        Mystro::Log.info "connecting as #{user} to #{o["long"] if o["long"]} (#{o["dns"]})"
-        exec("ssh #{user}@#{host}")
+        Mystro::Log.info "connecting as #{user} to #{o["long"] if o["long"]} (#{o["dns"]}) : #{options}"
+        exec("ssh #{options} #{user}@#{host}")
       end
     end
     subcommand "csshx", "use csshx to connect to all servers of environment" do
-      parameter "ENVIRONMENT", "environment name"
+      option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
+      parameter "PATTERN ...", "name or pattern of servers"
 
       def execute
-        Mystro::Log.info "csshx: #{environment}"
+        client = get_client(:compute, account)
+        list = client.search(pattern_list.join(","))
+        puts "servers found: #{list.map{|e| e["name"]}.join(", ")}"
+        cmd = "csshx --login #{user} #{list.map {|e| e["long"]||e["dns"]}.join(" ")}"
+        puts "cmd: #{cmd}"
+        exec(cmd)
       end
     end
 
@@ -69,6 +76,17 @@ module Mystro
           client = get_client(:compute, account)
           list = client.search(pattern_list.join(","))
           Mystro::Log.warn Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
+        end
+      end
+    end
+
+    subcommand "balancer", "manage balancers" do
+      self.default_subcommand = "list"
+      subcommand "list", "list balancers" do
+        def execute
+          client = get_client(:balancer, account)
+          list = client.list
+          Mystro::Log.warn Mystro::CLI.list(%{Account Name}, list)
         end
       end
     end
@@ -147,6 +165,7 @@ module Mystro
 end
 
 begin
+  Mystro::Plugin.run("commands:loaded", Mystro::Command)
   Mystro::Command.run
 rescue => e
   Mystro::Log.error "error: #{e.message}"

@@ -5,3 +5,8 @@ gemspec
 
 gem "mystro-common", :path => "../common"
 gem "awesome_print"
+
+gem "mongo"
+gem "bson_ext"
+
+gem "chef", "~> 10.20.0"

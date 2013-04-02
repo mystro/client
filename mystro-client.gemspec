@@ -17,6 +17,7 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
+  gem.add_dependency "mystro-common"
   gem.add_dependency "httparty" # talk to server's json api
   gem.add_dependency "clamp"
   gem.add_dependency "terminal-table"

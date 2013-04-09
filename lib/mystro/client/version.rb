@@ -5,7 +5,7 @@ unless defined?(Mystro::Client::Version)
         MAJOR  = 0
         MINOR  = 1
         TINY   = 0
-        TAG    = "rc2"
+        TAG    = "rc3"
         STRING = [MAJOR, MINOR, TINY, TAG].compact.join('.')
       end
     end

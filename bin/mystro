@@ -47,8 +47,9 @@ module Mystro
         exec("ssh #{options} #{user}@#{host}")
       end
     end
-    subcommand "csshx", "use csshx to connect to all servers of environment" do
+    subcommand "csshx", "use csshx to connect to all servers of search" do
       option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
+      option %w{-o --options}, "[OPTIONS]", "additional ssh options"
       parameter "PATTERN ...", "name or pattern of servers"
 
       def execute
@@ -56,6 +57,20 @@ module Mystro
         list = client.search(pattern_list.join(","))
         puts "servers found: #{list.map{|e| e["name"]}.join(", ")}"
         cmd = "csshx --login #{user} #{list.map {|e| e["long"]||e["dns"]}.join(" ")}"
+        puts "cmd: #{cmd}"
+        exec(cmd)
+      end
+    end
+    subcommand "cssh", "use cssh to connect to all servers of search" do
+      option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
+      option %w{-o --options}, "[OPTIONS]", "additional ssh options"
+      parameter "PATTERN ...", "name or pattern of servers"
+
+      def execute
+        client = get_client(:compute, account)
+        list = client.search(pattern_list.join(","))
+        puts "servers found: #{list.map{|e| e["name"]}.join(", ")}"
+        cmd = "cssh --username #{user} #{"--options #{options}" if options} #{list.map {|e| e["long"]||e["dns"]}.join(" ")}"
         puts "cmd: #{cmd}"
         exec(cmd)
       end

@@ -19,7 +19,7 @@ end
 
 module Mystro
   class Command < Clamp::Command
-    option %w{-a --account}, "ACCOUNT", "the account to filter with", default: nil, environment_variable: "MYSTRO_ACCOUNT"
+    option %w{-x --account}, "ACCOUNT", "the account to filter with", default: nil, environment_variable: "MYSTRO_ACCOUNT"
     option %w{-d --debug}, :flag, "turn on debugging", default: false do |v|
       Mystro::Log.console_debug
     end
@@ -79,18 +79,30 @@ module Mystro
     subcommand "compute", "manage computes" do
       self.default_subcommand = "list"
       subcommand "list", "list computes" do
+        option %w{-a --all}, :flag, "show private ip information", default: false
         def execute
           client = get_client(:compute, account)
           list = client.list
-          Mystro::Log.warn Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
+          keys = %w{Account Environment Name Roles IP DNS}
+          if all?
+            keys << 'private_ip'
+            keys << 'private_dns'
+          end
+          Mystro::Log.warn Mystro::CLI.list(keys, list)
         end
       end
       subcommand "search", "list computes" do
         parameter "[PATTERN] ...", "show only matching this pattern"
+        option %w{-a --all}, :flag, "show private ip information", default: false
         def execute
           client = get_client(:compute, account)
           list = client.search(pattern_list.join(","))
-          Mystro::Log.warn Mystro::CLI.list(%w{Account Environment Name Roles IP DNS}, list)
+          keys = %w{Account Environment Name Roles IP DNS}
+          if all?
+            keys << 'private_ip'
+            keys << 'private_dns'
+          end
+          Mystro::Log.warn Mystro::CLI.list(keys, list)
         end
       end
     end

@@ -9,17 +9,17 @@ require 'mystro/client'
 
 name = File.basename(__FILE__)
 
-def get_client(klass, account=nil)
+def get_client(klass, organization=nil)
   s = Mystro.config.server
-  a = account || Mystro.config.default_account
+  a = organization || Mystro.config.default_organization
   t = Mystro.config.token
-  #Mystro::Log.debug "server: '#{s}' account: '#{a}' token: '#{t}'"
+  #Mystro::Log.debug "server: '#{s}' organization: '#{a}' token: '#{t}'"
   Mystro::Client.new(klass, s, a, t)
 end
 
 module Mystro
   class Command < Clamp::Command
-    option %w{-x --account}, "ACCOUNT", "the account to filter with", default: nil, environment_variable: "MYSTRO_ACCOUNT"
+    option %w{-x --organization}, "ORGANIZATION", "the organization to filter with", default: nil, environment_variable: "MYSTRO_ORGANIZATION"
     option %w{-d --debug}, :flag, "turn on debugging", default: false do |v|
       Mystro::Log.console_debug
     end
@@ -32,7 +32,7 @@ module Mystro
       parameter "PATTERN ...", "name or pattern of server"
 
       def execute
-        client = get_client(:compute, account)
+        client = get_client(:compute, organization)
         list = client.search(pattern_list.join(","))
 
         raise "no servers matched" if list.count == 0
@@ -53,7 +53,7 @@ module Mystro
       parameter "PATTERN ...", "name or pattern of servers"
 
       def execute
-        client = get_client(:compute, account)
+        client = get_client(:compute, organization)
         list = client.search(pattern_list.join(","))
         puts "servers found: #{list.map{|e| e["name"]}.join(", ")}"
         cmd = "csshx --login #{user} #{list.map {|e| e["long"]||e["dns"]}.join(" ")}"
@@ -67,7 +67,7 @@ module Mystro
       parameter "PATTERN ...", "name or pattern of servers"
 
       def execute
-        client = get_client(:compute, account)
+        client = get_client(:compute, organization)
         list = client.search(pattern_list.join(","))
         puts "servers found: #{list.map{|e| e["name"]}.join(", ")}"
         cmd = "cssh --username #{user} #{"--options #{options}" if options} #{list.map {|e| e["long"]||e["dns"]}.join(" ")}"
@@ -81,9 +81,9 @@ module Mystro
       subcommand "list", "list computes" do
         option %w{-a --all}, :flag, "show private ip information", default: false
         def execute
-          client = get_client(:compute, account)
+          client = get_client(:compute, organization)
           list = client.list
-          keys = %w{Account Environment Name Roles IP DNS}
+          keys = %w{Organization Environment Name Roles IP DNS}
           if all?
             keys << 'private_ip'
             keys << 'private_dns'
@@ -95,9 +95,9 @@ module Mystro
         parameter "[PATTERN] ...", "show only matching this pattern"
         option %w{-a --all}, :flag, "show private ip information", default: false
         def execute
-          client = get_client(:compute, account)
+          client = get_client(:compute, organization)
           list = client.search(pattern_list.join(","))
-          keys = %w{Account Environment Name Roles IP DNS}
+          keys = %w{Organization Environment Name Roles IP DNS}
           if all?
             keys << 'private_ip'
             keys << 'private_dns'
@@ -111,19 +111,19 @@ module Mystro
       self.default_subcommand = "list"
       subcommand "list", "list balancers" do
         def execute
-          client = get_client(:balancer, account)
+          client = get_client(:balancer, organization)
           list = client.list
-          Mystro::Log.warn Mystro::CLI.list(%{Account Name}, list)
+          Mystro::Log.warn Mystro::CLI.list(%{Organization Name}, list)
         end
       end
     end
 
-    subcommand "account", "manage accounts" do
+    subcommand "organization", "manage organizations" do
       self.default_subcommand = "list"
-      subcommand "list", "list accounts" do
+      subcommand "list", "list organizations" do
         def execute
           ap Mystro.config.to_hash
-          client = get_client(:account, account)
+          client = get_client(:organization, organization)
           list = client.list
           Mystro::Log.warn Mystro::CLI.list(%w{Name Enabled File}, list)
         end
@@ -135,7 +135,7 @@ module Mystro
       subcommand "list", "list templates" do
         def execute
           ap Mystro.config.to_hash
-          client = get_client(:template, account)
+          client = get_client(:template, organization)
           list = client.list
           Mystro::Log.warn Mystro::CLI.list(%w{Name Enabled File}, list)
         end
@@ -146,7 +146,7 @@ module Mystro
       self.default_subcommand = "list"
       subcommand "list", "list environments" do
         def execute
-          client = get_client(:environment, account)
+          client = get_client(:environment, organization)
           list = client.list
           Mystro::Log.warn Mystro::CLI.list(%w{Deleting Name Template Computes Balancers}, list)
         end
@@ -155,7 +155,7 @@ module Mystro
       subcommand "show", "show environment" do
         parameter "name", "id or name of environment"
         def execute
-          client = get_client(:environment, account)
+          client = get_client(:environment, organization)
           response = client.show(name)
           Mystro::Log.warn Mystro::CLI.show(response) if response && response.count > 0
         end
@@ -164,7 +164,7 @@ module Mystro
       subcommand "destroy", "destroy environment" do
         parameter "name", "id or name of environment"
         def execute
-          client = get_client(:environment, account)
+          client = get_client(:environment, organization)
           env = client.show(name)
           raise "environment not found" unless env["id"]
           response = client.destroy(env["id"])
@@ -180,7 +180,7 @@ module Mystro
         option %w{-p --protected}, :flag, "set protected flag on environment", default: false
 
         def execute
-          client = get_client(:environment, account)
+          client = get_client(:environment, organization)
           response = client.create(name, template, protected?)
           if response && response.count > 0
             Mystro::Log.warn Mystro::CLI.show(response)

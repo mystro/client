@@ -1,8 +1,8 @@
 module Mystro
   module Client
-    class Account < Base
+    class Organization < Base
       def list
-        api_get("accounts")
+        api_get("organizations")
       end
     end
   end

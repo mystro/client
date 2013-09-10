@@ -8,9 +8,9 @@ require "mystro/client/cli"
 module Mystro
   module Client
     class << self
-      def new(klass, server, account, token=nil)
+      def new(klass, server, organization, token=nil)
         k = "Mystro::Client::#{klass.to_s.capitalize}".constantize
-        k.new(server,account,token)
+        k.new(server,organization,token)
       rescue => e
         Mystro::Log.error "class #{klass} not found or error instantiating"
         Mystro::Log.debug e
@@ -21,10 +21,10 @@ module Mystro
     class Base
       include HTTParty
 
-      def initialize(server, account, token=nil)
+      def initialize(server, organization, token=nil)
         @server  = server
         @token   = token
-        @account = account
+        @organization = organization
       end
 
       private
@@ -50,9 +50,9 @@ module Mystro
       end
 
       def api_call(m, u, data={}, headers={})
-        raise "account must be set" unless @account
+        raise "organization must be set" unless @organization
         method = m.to_sym
-        url = url("api/accounts/#@account/#{u}")
+        url = url("api/organizations/#@organization/#{u}")
 
         Mystro::Log.debug "<= #{url}"
         Mystro::Log.debug "=> #{data}" if data && data.count > 0
@@ -83,4 +83,4 @@ end
 require "mystro/client/compute"
 require "mystro/client/environment"
 require "mystro/client/template"
-require "mystro/client/account"
+require "mystro/client/organization"

@@ -1,5 +1,8 @@
 # Changelog
 
+## v0.3.1:
+* sync versions between server, client and common
+
 ## v0.3.0:
 * sync version with server
 

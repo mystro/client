@@ -3,7 +3,7 @@ unless defined?(Mystro::Client::Version)
     module Client
       module Version
         MAJOR  = 0
-        MINOR  = 1
+        MINOR  = 2
         TINY   = 0
         TAG    = nil
         STRING = [MAJOR, MINOR, TINY, TAG].compact.join('.')

@@ -12,7 +12,6 @@ module Mystro
       end
 
       def list(keys, list)
-        #ap list
         rows = []
         list.each do |l|
           row = []

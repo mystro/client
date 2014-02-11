@@ -125,7 +125,6 @@ module Mystro
       self.default_subcommand = "list"
       subcommand "list", "list organizations" do
         def execute
-          ap Mystro.config.to_hash
           client = get_client(:organization, organization)
           list = client.list
           Mystro::Log.warn Mystro::CLI.list(%w{Name Enabled File}, list)
@@ -137,7 +136,6 @@ module Mystro
       self.default_subcommand = "list"
       subcommand "list", "list templates" do
         def execute
-          ap Mystro.config.to_hash
           client = get_client(:template, organization)
           list = client.list
           Mystro::Log.warn Mystro::CLI.list(%w{Name Enabled File}, list)

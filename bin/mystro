@@ -27,7 +27,7 @@ module Mystro
       Mystro::Log.console_quiet
     end
     subcommand "ssh", "ssh to server" do
-      option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
+      option %w{-x --user}, "USER", "the user to connect as"
       option %w{-o --options}, "[OPTIONS]", "additional ssh options"
       parameter "PATTERN ...", "name or pattern of server"
 
@@ -43,12 +43,15 @@ module Mystro
 
         raise "host name not set" unless host
 
-        Mystro::Log.info "connecting as #{user} to #{o["long"] if o["long"]} (#{o["dns"]}) : #{options}"
-        exec("ssh #{options} #{user}@#{host}")
+        u = user || Mystro.config.ssh? && Mystro.config.ssh.user || o['user']
+        raise 'no user' unless u
+
+        Mystro::Log.info "connecting as #{u} to #{o["long"] if o["long"]} (#{o["dns"]}) : #{options}"
+        exec("ssh #{options} #{u}@#{host}")
       end
     end
     subcommand "csshx", "use csshx to connect to all servers of search" do
-      option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
+      option %w{-x --user}, "USER", "the user to connect as"
       option %w{-o --options}, "[OPTIONS]", "additional ssh options"
       parameter "PATTERN ...", "name or pattern of servers"
 
@@ -62,7 +65,7 @@ module Mystro
       end
     end
     subcommand "cssh", "use cssh to connect to all servers of search" do
-      option %w{-x --user}, "USER", "the user to connect as", default: "ubuntu"
+      option %w{-x --user}, "USER", "the user to connect as"
       option %w{-o --options}, "[OPTIONS]", "additional ssh options"
       parameter "PATTERN ...", "name or pattern of servers"
 

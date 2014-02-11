@@ -9,3 +9,5 @@ gem 'mongo'
 gem 'bson_ext'
 
 gem 'chef', '~> 11.8.2'
+
+gem 'crackin'

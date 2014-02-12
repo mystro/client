@@ -1,5 +1,8 @@
 ### Changelog
 
+##### v0.3.2:
+
+
 ##### v0.3.2.rc0:
 * setup crackin
 * clean up deps, remove awesome print calls.
@@ -20,6 +23,7 @@
 
 ##### v0.1.0:
 
+
 ##### v0.1.0.rc3:
 * add cssh support for linux users
 
@@ -32,5 +36,4 @@
 * ruby version file
 * add cssh support for linux users
 * fix mystro-common dependency
-
 
